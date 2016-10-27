@@ -71,11 +71,25 @@ namespace VSGI.CGI {
 			}
 
 #if GIO_2_44
+#if GIO_UNIX
 			var connection = new SimpleIOStream (new UnixInputStream (stdin.fileno (), true),
 			                                     new UnixOutputStream (stdout.fileno (), true));
+#elif GIO_WINDOWS
+			var connection = new SimpleIOStream (new Win32InputStream (stdin, true),
+			                                     new Win32OutputStream (stdout, true));
 #else
+			throw new IOError.NOT_SUPPORTED ("Support for system-dependant I/O stream is missing.");
+#endif
+#else
+#if GIO_UNIX
 			var connection = new Connection (new UnixInputStream (stdin.fileno (), true),
 			                                 new UnixOutputStream (stdout.fileno (), true));
+#elif GIO_WINDOWS
+			var connection = new Connection (new Win32InputStream (stdin, true),
+			                                 new Win32OutputStream (stdout, true));
+#else
+			throw new IOError.NOT_SUPPORTED ("Support for system-dependant I/O stream is missing.");
+#endif
 #endif
 
 			var req = new Request.from_cgi_environment (connection, Environ.@get ());
@@ -99,13 +113,6 @@ namespace VSGI.CGI {
 
 		public override void stop () {
 			// CGI handle a single connection
-		}
-
-		/**
-		 * Forking does not make sense for CGI.
-		 */
-		public override Pid fork () {
-			return 0;
 		}
 	}
 }
